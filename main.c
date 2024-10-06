@@ -77,75 +77,72 @@ void handle_error(uint32_t status)
 *******************************************************************************/
 int main(void)
 {
-	uint64_t start_time = 0, time_diff = 0, timeout_cnt = 0;
-    uint8_t fsm_st = 0;
-    uint8_t watchdog_start = 0;
+	enum listen_fsm_st
+	{
+		FSM_IDLE_ST,
+		FSM_READ_CMD_ST
+	};
+
+	uint64_t alive_timer = 0,
+			 serial_timer = 0,
+			 time_diff = 0;
 
     initPeripherals();
     initTimer();
 
-    for(;;) {
-    	time_diff = rtc_ms - timeout_cnt;
-        if (cyhal_uart_getc(&cy_retarget_io_uart_obj, &uart_read_value, 1) == CY_RSLT_SUCCESS) {
+    int fsm_st = 0;
+    while(1)
+    {
+        if (cyhal_uart_getc(&cy_retarget_io_uart_obj, &uart_read_value, 1) == CY_RSLT_SUCCESS)
+        {
 			switch (fsm_st) {
 				// Idle state
-				case 0:
-					if (uart_read_value == 'H') {
-						fsm_st = 1;
-						timeout_cnt = rtc_ms;
+				case FSM_IDLE_ST:
+					// New command from host
+					if (uart_read_value == 'W')
+					{
+						fsm_st = FSM_READ_CMD_ST;
 					}
-
 					break;
-				// Message from host
-				case 1:
-					fsm_st = 0;
-					// start
-					if (uart_read_value == 'S') {
-						watchdog_start = 1;
-						cyhal_gpio_write(CYBSP_USER_LED, CYBSP_LED_STATE_OFF); // turn off led
-						UART_wstring("CS", 2); // confirm start
-					}
-					// reset
-					else if(uart_read_value == 'R') {
+
+				// Read command state
+				case FSM_READ_CMD_ST:
+					// Reset DUT command
+					if(uart_read_value == 'R')
+					{
 						restartTestPsoc();
 					}
+					fsm_st = FSM_IDLE_ST;
 					break;
 
+				// Invalid state
 				default:
-					fsm_st = 0;
+					fsm_st = FSM_IDLE_ST;
 			}
-
-        }
-        // timeout
-        else if (time_diff > 300) {
-        	fsm_st = 0; //reset state
         }
 
-        time_diff = rtc_ms - start_time;
-        if (watchdog_start)
-        {
-        	if(time_diff >= 5E3)
-        	{
+        time_diff = rtc_ms - alive_timer;
+		if(time_diff >= 100)
+		{
+			if (alive_cnt == 0)
+			{
+				UART_wstring("WT", 2);		 // Signal alive timeout
+				cyhal_system_delay_ms(3E3);
+			}
+			//printf("%lu\r\n", alive_cnt);
+			alive_cnt = 0;
+			alive_timer = rtc_ms;
+		}
 
-        		if (alive_cnt == 0)
-        		{
-            		restartTestPsoc();
-            		UART_wstring("CR", 2); // control restart
-        		}
-        		printf("alive count: %d\r\n", alive_cnt);
-        		alive_cnt = 0;
-        		start_time = rtc_ms;
 
-        	}
-        }
-        else
-        {
-        	if(time_diff >= 500)
-        	{
-        		UART_wstring("CW", 2); // signal waiting
-        		start_time = rtc_ms;
-        	}
-        }
+        time_diff = rtc_ms - serial_timer;
+		if(time_diff >= 7E3)
+		{
+			cyhal_gpio_toggle(CYBSP_USER_LED);	// Visual alive
+			UART_wstring("WA", 2); 				// Serial alive
+			serial_timer = rtc_ms;
+		}
+
 
 
     } // for loop
@@ -185,7 +182,8 @@ void UART_wbyte(uint8_t tx_data)
 *******************************************************************************/
 void UART_wstring(char *str_ptr, size_t str_size)
 {
-	for (uint32_t i = 0; i < str_size; i++){
+	for (uint32_t i = 0; i < str_size; i++)
+	{
 		UART_wbyte((uint8_t) str_ptr[i]);
 	}
 }
@@ -198,9 +196,6 @@ void restartTestPsoc()
     cyhal_gpio_write(RESET_OUT, 0u);
     cyhal_system_delay_ms(10);
     cyhal_gpio_write(RESET_OUT, 1u);
-
-    // Wait test PSoc restart
-    cyhal_system_delay_ms(3E3);
 }
 
 /*******************************************************************************
