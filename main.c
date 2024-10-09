@@ -130,7 +130,7 @@ int main(void)
 		{
 			if (alive_cnt == 0)
 			{
-				UART_wstring("WV", 2);			// Signal alive timeout
+				UART_wstring("WT", 2);			// Signal alive timeout
 				cyhal_system_delay_ms(1E3);
 			}
 			//printf("%lu\r\n", alive_cnt);
