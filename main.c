@@ -111,6 +111,8 @@ int main(void)
 					if(uart_read_value == 'R')
 					{
 						restartTestPsoc();
+						cyhal_system_delay_ms(500);
+						alive_timer = rtc_ms;
 					}
 					fsm_st = FSM_IDLE_ST;
 					break;
@@ -118,23 +120,25 @@ int main(void)
 				// Invalid state
 				default:
 					fsm_st = FSM_IDLE_ST;
+					break;
 			}
         }
 
         time_diff = rtc_ms - alive_timer;
+        // 100ms timeout
 		if(time_diff >= 100)
 		{
 			if (alive_cnt == 0)
 			{
-				UART_wstring("WT", 2);		 // Signal alive timeout
-				cyhal_system_delay_ms(3E3);
+				UART_wstring("WV", 2);			// Signal alive timeout
+				cyhal_system_delay_ms(1E3);
 			}
 			//printf("%lu\r\n", alive_cnt);
 			alive_cnt = 0;
 			alive_timer = rtc_ms;
 		}
 
-
+		// Monitor device status command
         time_diff = rtc_ms - serial_timer;
 		if(time_diff >= 7E3)
 		{
@@ -250,23 +254,20 @@ void initPeripherals()
 
     /* Initialize retarget-io to use the debug UART port */
     result = cy_retarget_io_init_fc(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX,
-            							CYBSP_DEBUG_UART_CTS,CYBSP_DEBUG_UART_RTS,CY_RETARGET_IO_BAUDRATE);
+            						CYBSP_DEBUG_UART_CTS,CYBSP_DEBUG_UART_RTS,CY_RETARGET_IO_BAUDRATE);
 
     handle_error(result);
 
     /* Initialize the user LED */
-    result = cyhal_gpio_init(CYBSP_USER_LED, CYHAL_GPIO_DIR_OUTPUT,
-    							CYHAL_GPIO_DRIVE_STRONG, CYBSP_LED_STATE_ON);
+    result = cyhal_gpio_init(CYBSP_USER_LED, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, CYBSP_LED_STATE_ON);
     handle_error(result);
 
     /* Initialize  ALIVE signal port*/
-    result = cyhal_gpio_init(ALIVE_IN, CYHAL_GPIO_DIR_INPUT,
-    							CYHAL_GPIO_DRIVE_PULLDOWN, 0u);
+    result = cyhal_gpio_init(ALIVE_IN, CYHAL_GPIO_DIR_INPUT, CYHAL_GPIO_DRIVE_PULLDOWN, 0u);
     handle_error(result);
 
     /* Initialize  RESET signal port*/
-    result = cyhal_gpio_init(RESET_OUT, CYHAL_GPIO_DIR_OUTPUT,
-    							CYHAL_GPIO_DRIVE_STRONG, 1u);
+    result = cyhal_gpio_init(RESET_OUT, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, 1u);
     handle_error(result);
 
     /* Configure GPIO interrupt for ALIVE signal*/
