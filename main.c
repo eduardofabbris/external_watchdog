@@ -147,7 +147,13 @@ int main(void)
 			}
 			else
 			{
+				// Falling flag
+				if (rst_req == 1)
+				{
+					force_rst = 1;
+				}
 				rst_req = 0;
+				// Increase message time interval
 				serial_timeout = 7E3;
 			}
 			//printf("%lu\r\n", alive_cnt);
