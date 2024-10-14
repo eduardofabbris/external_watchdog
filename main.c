@@ -83,9 +83,15 @@ int main(void)
 		FSM_READ_CMD_ST
 	};
 
+	// Flags
+	uint8_t  rst_req = 0,
+			 force_rst = 0;
+
+	// Timers and counter
 	uint64_t alive_timer = 0,
 			 serial_timer = 0,
-			 time_diff = 0;
+			 time_diff = 0,
+			 serial_timeout = 7E3;
 
     initPeripherals();
     initTimer();
@@ -130,8 +136,19 @@ int main(void)
 		{
 			if (alive_cnt == 0)
 			{
-				UART_wstring("WT", 2);			// Signal alive timeout
-				cyhal_system_delay_ms(1E3);
+				// Rising flag
+				if ( rst_req == 0)
+				{
+					force_rst = 1;
+				}
+				rst_req = 1;
+				// Decrease message time interval
+				serial_timeout = 3E3;
+			}
+			else
+			{
+				rst_req = 0;
+				serial_timeout = 7E3;
 			}
 			//printf("%lu\r\n", alive_cnt);
 			alive_cnt = 0;
@@ -140,11 +157,19 @@ int main(void)
 
 		// Monitor device status command
         time_diff = rtc_ms - serial_timer;
-		if(time_diff >= 7E3)
+		if(time_diff >= serial_timeout || force_rst)
 		{
 			cyhal_gpio_toggle(CYBSP_USER_LED);	// Visual alive
-			UART_wstring("WA", 2); 				// Serial alive
+			if (rst_req)
+			{
+				UART_wstring("WT", 2);			// Signal alive timeout
+			}
+			else
+			{
+				UART_wstring("WA", 2); 			// Serial alive
+			}
 			serial_timer = rtc_ms;
+			force_rst = 0;
 		}
 
 
