@@ -117,6 +117,7 @@ int main(void)
 					if(uart_read_value == 'R')
 					{
 						restartTestPsoc();
+						// Delay alive verification after restarting device
 						cyhal_system_delay_ms(500);
 						alive_timer = rtc_ms;
 					}
