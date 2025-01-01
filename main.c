@@ -1,14 +1,13 @@
 /*******************************************************************************
-* File Name:   main.c
+* @filename : main.c
+* @brief    : This code is intended to provide a external watchdog routine for
+*  			  a Test PSoc board.
 *
-* Description: This code is intended to provide a external watchdog routine for
-*  a Test PSoc board.
+* MIT License
 *
-* Related Document: See README.md
-*
-*
+* Copyright (c) 2024 eduardofabbris
+* See the LICENSE file for details.
 ********************************************************************************/
-
 
 /*******************************************************************************
 * Header Files
@@ -28,8 +27,8 @@
 #define RTC_TIMER_CLOCK_HZ     (10000)
 #define RTC_TIMER_PERIOD       (9) // 1ms precision
 
-#define ALIVE_IN 	(P10_2)
-#define RESET_OUT 	(P9_2)
+#define ALIVE_IN	(P10_2)
+#define RESET_OUT	(P9_2)
 
 /*******************************************************************************
 * Global Variables
@@ -173,7 +172,7 @@ int main(void)
 			}
 			else
 			{
-				UART_wstring("WA", 2); 			// Serial alive
+				UART_wstring("WA", 2);			// Serial alive
 			}
 			serial_timer = rtc_ms;
 			force_rst = 0;
@@ -244,7 +243,7 @@ void restartTestPsoc()
     const cyhal_timer_cfg_t rtc_timer_cfg =
     {
         .compare_value = 0,                 /* Timer compare value, not used */
-        .period = RTC_TIMER_PERIOD,   		/* Defines the timer period */
+        .period = RTC_TIMER_PERIOD,			/* Defines the timer period */
         .direction = CYHAL_TIMER_DIR_UP,    /* Timer counts up */
         .is_compare = false,                /* Don't use compare mode */
         .is_continuous = true,              /* Run timer indefinitely */
@@ -286,7 +285,7 @@ void initPeripherals()
 
     /* Initialize retarget-io to use the debug UART port */
     result = cy_retarget_io_init_fc(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX,
-            						CYBSP_DEBUG_UART_CTS,CYBSP_DEBUG_UART_RTS,CY_RETARGET_IO_BAUDRATE);
+									CYBSP_DEBUG_UART_CTS,CYBSP_DEBUG_UART_RTS,CY_RETARGET_IO_BAUDRATE);
 
     handle_error(result);
 
