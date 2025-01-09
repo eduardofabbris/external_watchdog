@@ -1,14 +1,13 @@
 /*******************************************************************************
-* File Name:   main.c
+* @filename : main.c
+* @brief    : This code is intended to provide a external watchdog routine for
+*             a Test PSoc board.
 *
-* Description: This code is intended to provide a external watchdog routine for
-*  a Test PSoc board.
+* MIT License
 *
-* Related Document: See README.md
-*
-*
+* Copyright (c) 2024 eduardofabbris
+* See the LICENSE file for details.
 ********************************************************************************/
-
 
 /*******************************************************************************
 * Header Files
@@ -28,8 +27,8 @@
 #define RTC_TIMER_CLOCK_HZ     (10000)
 #define RTC_TIMER_PERIOD       (9) // 1ms precision
 
-#define ALIVE_IN 	(P10_2)
-#define RESET_OUT 	(P9_2)
+#define ALIVE_IN    (P10_2)
+#define RESET_OUT   (P9_2)
 
 /*******************************************************************************
 * Global Variables
@@ -77,21 +76,21 @@ void handle_error(uint32_t status)
 *******************************************************************************/
 int main(void)
 {
-	enum listen_fsm_st
-	{
-		FSM_IDLE_ST,
-		FSM_READ_CMD_ST
-	};
+    enum listen_fsm_st
+    {
+        FSM_IDLE_ST,
+        FSM_READ_CMD_ST
+    };
 
-	// Flags
-	uint8_t  rst_req = 0,
-			 force_rst = 0;
+    // Flags
+    uint8_t  rst_req = 0,
+             force_rst = 0;
 
-	// Timers and counter
-	uint64_t alive_timer = 0,
-			 serial_timer = 0,
-			 time_diff = 0,
-			 serial_timeout = 7E3;
+    // Timers and counter
+    uint64_t alive_timer = 0,
+             serial_timer = 0,
+             time_diff = 0,
+             serial_timeout = 7E3;
 
     initPeripherals();
     initTimer();
@@ -101,83 +100,83 @@ int main(void)
     {
         if (cyhal_uart_getc(&cy_retarget_io_uart_obj, &uart_read_value, 1) == CY_RSLT_SUCCESS)
         {
-			switch (fsm_st) {
-				// Idle state
-				case FSM_IDLE_ST:
-					// New command from host
-					if (uart_read_value == 'W')
-					{
-						fsm_st = FSM_READ_CMD_ST;
-					}
-					break;
+            switch (fsm_st) {
+                // Idle state
+                case FSM_IDLE_ST:
+                    // New command from host
+                    if (uart_read_value == 'W')
+                    {
+                        fsm_st = FSM_READ_CMD_ST;
+                    }
+                    break;
 
-				// Read command state
-				case FSM_READ_CMD_ST:
-					// Reset DUT command
-					if(uart_read_value == 'R')
-					{
-						restartTestPsoc();
-						// Delay alive verification after restarting device
-						cyhal_system_delay_ms(500);
-						alive_timer = rtc_ms;
-					}
-					fsm_st = FSM_IDLE_ST;
-					break;
+                // Read command state
+                case FSM_READ_CMD_ST:
+                    // Reset DUT command
+                    if(uart_read_value == 'R')
+                    {
+                        restartTestPsoc();
+                        // Delay alive verification after restarting device
+                        cyhal_system_delay_ms(500);
+                        alive_timer = rtc_ms;
+                    }
+                    fsm_st = FSM_IDLE_ST;
+                    break;
 
-				// Invalid state
-				default:
-					fsm_st = FSM_IDLE_ST;
-					break;
-			}
+                // Invalid state
+                default:
+                    fsm_st = FSM_IDLE_ST;
+                    break;
+            }
         }
 
         time_diff = rtc_ms - alive_timer;
         // 100ms timeout
-		if(time_diff >= 100)
-		{
-			if (alive_cnt == 0)
-			{
-				// Rising flag
-				if ( rst_req == 0)
-				{
-					force_rst = 1;
-				}
-				rst_req = 1;
-				// Decrease message time interval
-				serial_timeout = 3E3;
-			}
-			else
-			{
-				// Falling flag
-				if (rst_req == 1)
-				{
-					force_rst = 1;
-				}
-				rst_req = 0;
-				// Increase message time interval
-				serial_timeout = 7E3;
-			}
-			//printf("%lu\r\n", alive_cnt);
-			alive_cnt = 0;
-			alive_timer = rtc_ms;
-		}
+        if(time_diff >= 100)
+        {
+            if (alive_cnt == 0)
+            {
+                // Rising flag
+                if ( rst_req == 0)
+                {
+                    force_rst = 1;
+                }
+                rst_req = 1;
+                // Decrease message time interval
+                serial_timeout = 3E3;
+            }
+            else
+            {
+                // Falling flag
+                if (rst_req == 1)
+                {
+                    force_rst = 1;
+                }
+                rst_req = 0;
+                // Increase message time interval
+                serial_timeout = 7E3;
+            }
+            //printf("%lu\r\n", alive_cnt);
+            alive_cnt = 0;
+            alive_timer = rtc_ms;
+        }
 
-		// Monitor device status command
+        // Monitor device status command
         time_diff = rtc_ms - serial_timer;
-		if(time_diff >= serial_timeout || force_rst)
-		{
-			cyhal_gpio_toggle(CYBSP_USER_LED);	// Visual alive
-			if (rst_req)
-			{
-				UART_wstring("WT", 2);			// Signal alive timeout
-			}
-			else
-			{
-				UART_wstring("WA", 2); 			// Serial alive
-			}
-			serial_timer = rtc_ms;
-			force_rst = 0;
-		}
+        if(time_diff >= serial_timeout || force_rst)
+        {
+            cyhal_gpio_toggle(CYBSP_USER_LED);  // Visual alive
+            if (rst_req)
+            {
+                UART_wstring("WT", 2);          // Signal alive timeout
+            }
+            else
+            {
+                UART_wstring("WA", 2);          // Serial alive
+            }
+            serial_timer = rtc_ms;
+            force_rst = 0;
+        }
 
 
 
@@ -190,7 +189,7 @@ int main(void)
 *******************************************************************************/
 static void isr_timer(void *callback_arg, cyhal_timer_event_t event)
 {
-	rtc_ms++;
+    rtc_ms++;
 }
 
 /*******************************************************************************
@@ -198,7 +197,7 @@ static void isr_timer(void *callback_arg, cyhal_timer_event_t event)
 *******************************************************************************/
 static void gpio_interrupt_handler(void *handler_arg, cyhal_gpio_event_t event)
 {
-	alive_cnt++;
+    alive_cnt++;
 }
 
 /*******************************************************************************
@@ -206,10 +205,10 @@ static void gpio_interrupt_handler(void *handler_arg, cyhal_gpio_event_t event)
 *******************************************************************************/
 void UART_wbyte(uint8_t tx_data)
 {
-	cy_rslt_t result;
+    cy_rslt_t result;
 
-	result = cyhal_uart_putc(&cy_retarget_io_uart_obj, tx_data);
-	handle_error(result);
+    result = cyhal_uart_putc(&cy_retarget_io_uart_obj, tx_data);
+    handle_error(result);
 
 }
 
@@ -218,10 +217,10 @@ void UART_wbyte(uint8_t tx_data)
 *******************************************************************************/
 void UART_wstring(char *str_ptr, size_t str_size)
 {
-	for (uint32_t i = 0; i < str_size; i++)
-	{
-		UART_wbyte((uint8_t) str_ptr[i]);
-	}
+    for (uint32_t i = 0; i < str_size; i++)
+    {
+        UART_wbyte((uint8_t) str_ptr[i]);
+    }
 }
 
 /*******************************************************************************
@@ -244,7 +243,7 @@ void restartTestPsoc()
     const cyhal_timer_cfg_t rtc_timer_cfg =
     {
         .compare_value = 0,                 /* Timer compare value, not used */
-        .period = RTC_TIMER_PERIOD,   		/* Defines the timer period */
+        .period = RTC_TIMER_PERIOD,         /* Defines the timer period */
         .direction = CYHAL_TIMER_DIR_UP,    /* Timer counts up */
         .is_compare = false,                /* Don't use compare mode */
         .is_continuous = true,              /* Run timer indefinitely */
@@ -278,7 +277,7 @@ void restartTestPsoc()
 *******************************************************************************/
 void initPeripherals()
 {
-	cy_rslt_t result;
+    cy_rslt_t result;
 
     /* Initialize the device and board peripherals */
     result = cybsp_init();
@@ -286,7 +285,7 @@ void initPeripherals()
 
     /* Initialize retarget-io to use the debug UART port */
     result = cy_retarget_io_init_fc(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX,
-            						CYBSP_DEBUG_UART_CTS,CYBSP_DEBUG_UART_RTS,CY_RETARGET_IO_BAUDRATE);
+                                    CYBSP_DEBUG_UART_CTS,CYBSP_DEBUG_UART_RTS,CY_RETARGET_IO_BAUDRATE);
 
     handle_error(result);
 
