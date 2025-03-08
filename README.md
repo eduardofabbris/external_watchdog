@@ -1,6 +1,6 @@
 # External Watchdog
 
-This repository is part of my Graduation Project in Electrical Engineering, entitled ["Radiation Fault Detection System for SEE in a Mixed-signal Programmable SOC"](https://github.com/eduardofabbris/psoc_monitor/blob/main/doc/graduation_thesis.pdf).
+This repository is part of my Graduation Project in Electrical Engineering, titled ["Radiation Fault Detection System for SEE in a Mixed-signal Programmable SOC"](https://github.com/eduardofabbris/psoc_monitor/blob/main/doc/graduation_thesis.pdf).
 
 The hardware chosen for this part of the system was a PSoC 6 version mounted in a Cypress development kit (CY8CPROTO-062-4343W).
 
